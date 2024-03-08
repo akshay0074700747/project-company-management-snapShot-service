@@ -2,42 +2,41 @@ package services
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
+	"github.com/akshay0074700747/projectandCompany_management_protofiles/pb/userpb"
 	"github.com/akshay0074700747/projectandCompany_management_snapShot-service/entities"
 	"github.com/akshay0074700747/projectandCompany_management_snapShot-service/helpers"
 	"github.com/akshay0074700747/projectandCompany_management_snapShot-service/internal/usecases"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 type SnapShotService struct {
-	Usecase usecases.SnapShotUsecaseInterfaces
+	Usecase  usecases.SnapShotUsecaseInterfaces
+	UserConn userpb.UserServiceClient
 }
 
-func NewSnapShotService(usecase usecases.SnapShotUsecaseInterfaces) *SnapShotService {
+func NewSnapShotService(usecase usecases.SnapShotUsecaseInterfaces, usrAddr string) *SnapShotService {
+	userConn, _ := helpers.DialGrpc(usrAddr)
 	return &SnapShotService{
-		Usecase: usecase,
+		Usecase:  usecase,
+		UserConn: userpb.NewUserServiceClient(userConn),
 	}
 }
 
 func (snap *SnapShotService) SendProjectSnapshot(w http.ResponseWriter, r *http.Request) {
-	
+
 }
 
-func (snap *SnapShotService) SendSnapShot(w http.ResponseWriter, r *http.Request)  {
-	
+func (snap *SnapShotService) SendSnapShot(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func (snap *SnapShotService) GetTotalProjectVersionsSnapshots(w http.ResponseWriter, r *http.Request) {
-	
+
 }
 
 func (snap *SnapShotService) GetTotalProjectSnapshots(w http.ResponseWriter, r *http.Request) {
-	
+
 	var res = make(map[string]string)
 	if err := json.NewDecoder(r.Body).Decode(&res); err != nil {
 		helpers.PrintErr(err, "error happened decoding the json")
@@ -47,7 +46,7 @@ func (snap *SnapShotService) GetTotalProjectSnapshots(w http.ResponseWriter, r *
 
 	if res["versionID"] == "" {
 		//show the total snapshots for the specified version
-	}else {
+	} else {
 		//show the total snapshots for the current version
 	}
 }
@@ -61,15 +60,15 @@ func (snap *SnapShotService) GetSnapshots(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if res["email"] == "" || res["projectID"] == "" {
-		http.Error(w, "the email and projectID cannot be empty", http.StatusInternalServerError)
+	if res["userID"] == "" || res["projectID"] == "" {
+		http.Error(w, "the userID and projectID cannot be empty", http.StatusInternalServerError)
 		return
 	}
 
-	ress, err := snap.Usecase.GetSnapshotData(res["email"], res["projectID"])
+	ress, err := snap.Usecase.GetSnapshotData(res["usrID"], res["projectID"])
 	if err != nil {
 		helpers.PrintErr(err, "error happened at GetSnapshotData")
-		http.Error(w, "the email and projectID cannot be empty", http.StatusInternalServerError)
+		http.Error(w, "the userID and projectID cannot be empty", http.StatusInternalServerError)
 		return
 	}
 
@@ -87,97 +86,61 @@ func (snap *SnapShotService) GetSnapshots(w http.ResponseWriter, r *http.Request
 	w.Write(jsonDta)
 }
 
-func (snap *SnapShotService) StartConsumerGroup() {
+func (snap *SnapShotService) getStages(w http.ResponseWriter, r *http.Request) {
 
-	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":  "localhost:9092",
-		"group.id":           "snapshotConsumers",
-		"auto.offset.reset":  "earliest",
-		"enable.auto.commit": "false"})
+	queries := r.URL.Query()
+
+	ress, err := snap.Usecase.GetStages(queries.Get("userID"), queries.Get("projectID"))
 	if err != nil {
-		helpers.PrintErr(err, "error occured at creating a kafka consumer")
+		helpers.PrintErr(err, "error happened at GetStages usecase")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	topic := "SnapshotTopic"
+	var rees entities.StageRes
 
-	err = consumer.Assign([]kafka.TopicPartition{
-		{
-			Topic:     &topic,
-			Partition: 0,
-			Offset:    kafka.OffsetStored,
-		},
-	})
+	rees.Stages = len(ress)
+	rees.Details = ress
+
+	jsonDta, err := json.Marshal(rees)
 	if err != nil {
-		helpers.PrintErr(err, "Error assigning partitions")
+		helpers.PrintErr(err, "error happened at marshaling to json")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
-	defer func() {
-		signal.Stop(sigchan)
-		consumer.Close()
-	}()
+	w.WriteHeader(http.StatusOK)
 
-	run := true
-	for run {
-		select {
-		case sig := <-sigchan:
-			fmt.Printf("Received signal: %v\n", sig)
-			run = false
+	w.Header().Set("Content-Type", "application/json")
 
-		default:
-			ev := consumer.Poll(1)
-			if ev == nil {
-				continue
-			}
+	w.Write(jsonDta)
+}
 
-			switch e := ev.(type) {
-			case *kafka.Message:
-				fmt.Printf("Received message ")
+func (snap *SnapShotService) getStagesCount(w http.ResponseWriter, r *http.Request) {
 
-				var msg entities.SnapMsg
-				var meta entities.SnapMessage
+	queries := r.URL.Query()
 
-				err := json.Unmarshal(e.Value, &msg)
-				if err != nil {
-					fmt.Printf("Error unmarshalling message value: %v\n", err)
-					return
-				}
-
-				meta.Email = msg.Email
-				meta.ProjectID = msg.ProjectID
-
-				for _, snapShot := range msg.Snapshots {
-					if err = snap.Usecase.InsertSnapShot(snapShot.Filename, snapShot.File, msg.Email, msg.ProjectID); err != nil {
-						helpers.PrintErr(err, "Error happened at InsertSnapShot")
-					}
-					meta.Snapshots = append(meta.Snapshots, entities.Snapshot{
-						Filename:    snapShot.Filename,
-						Key:         snapShot.Key,
-						Description: snapShot.Description,
-						Progress:    snapShot.Progress,
-					})
-				}
-
-				if err = snap.Usecase.InsertMetaData(meta); err != nil {
-					helpers.PrintErr(err, "Error occured on InsertMetaData usecase")
-				}
-
-				_, err = consumer.CommitOffsets([]kafka.TopicPartition{e.TopicPartition})
-				if err != nil {
-					helpers.PrintErr(err, "Error committing offset")
-				}
-			case (kafka.Error):
-				helpers.PrintErr(e, "errror occured at consumer")
-			default:
-				fmt.Printf("Ignored event: %v\n", e)
-
-			}
-		}
+	usersProgress, err := snap.Usecase.GetStagesCount(queries.Get("projectID"))
+	if err != nil {
+		helpers.PrintErr(err, "error happened at GetStagesCount usecase")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	fmt.Println("Consumer shutting down...")
+	var res entities.ListofUserProgress
+	res.UserAndProgress = usersProgress
+
+	jsonDta, err := json.Marshal(res)
+	if err != nil {
+		helpers.PrintErr(err, "error happened at marshaling to json")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	w.Write(jsonDta)
 
 }

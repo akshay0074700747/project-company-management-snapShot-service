@@ -1,9 +1,11 @@
 package services
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/rs/cors"
 )
 
 type SnapShotEngine struct {
@@ -19,7 +21,19 @@ func (engine *SnapShotEngine) Start(addr string) {
 
 	r := chi.NewRouter()
 
-	r.Get("/project/snapshots",engine.Srv.GetSnapshots)
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	})
 
-	http.ListenAndServe(addr, r)
+	handler := c.Handler(r)
+
+	r.Get("/project/snapshots", engine.Srv.GetSnapshots)
+	r.Get("/project/task/stages", engine.Srv.getStages)
+	r.Get("/project/task/stages/count", engine.Srv.getStagesCount)
+
+	fmt.Println("snapShot service is starting")
+	http.ListenAndServe(addr, handler)
 }

@@ -10,6 +10,8 @@ import (
 
 type SnapShotAdapterInterfaces interface {
 	InsertSnapShot(context.Context, string, io.Reader, int64, minio.PutObjectOptions) error
-	InsertSnapshotMetaDatas(entities.SnapMessage) error
+	InsertSnapshotMetaDatas(entities.SnapMessage, bool, string) error
 	GetSnapshotData(string, string) (entities.SnapMessage, error)
+	GetStages(string, string) ([]entities.StagesDetails, error)
+	GetStagesCount(string) ([]entities.UserProgress, error)
 }

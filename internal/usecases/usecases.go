@@ -37,9 +37,9 @@ func (snap *SnapShotUseCases) InsertSnapShot(fileName string, reader []byte, ema
 	return nil
 }
 
-func (snap *SnapShotUseCases) InsertMetaData(req entities.SnapMessage) error {
+func (snap *SnapShotUseCases) InsertMetaData(req entities.SnapMessage, isStaged bool, key string) error {
 
-	if err := snap.Adapter.InsertSnapshotMetaDatas(req); err != nil {
+	if err := snap.Adapter.InsertSnapshotMetaDatas(req, isStaged, key); err != nil {
 		helpers.PrintErr(err, "error occured at InsertSnapshotMetaDatas adapter")
 		return err
 	}
@@ -56,4 +56,26 @@ func (snap *SnapShotUseCases) GetSnapshotData(email, projetID string) (entities.
 	}
 
 	return res, err
+}
+
+func (snap *SnapShotUseCases) GetStages(userID, projectID string) ([]entities.StagesDetails, error) {
+
+	res, err := snap.Adapter.GetStages(userID, projectID)
+	if err != nil {
+		helpers.PrintErr(err, "error happened at GetStages adapter")
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (snap *SnapShotUseCases) GetStagesCount(projectID string) ([]entities.UserProgress, error) {
+
+	res, err := snap.Adapter.GetStagesCount(projectID)
+	if err != nil {
+		helpers.PrintErr(err, "error happened at GetStagesCount adapter")
+		return nil, err
+	}
+
+	return res, nil
 }
