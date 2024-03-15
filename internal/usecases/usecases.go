@@ -3,6 +3,7 @@ package usecases
 import (
 	"bytes"
 	"context"
+	"io"
 
 	"github.com/akshay0074700747/projectandCompany_management_snapShot-service/entities"
 	"github.com/akshay0074700747/projectandCompany_management_snapShot-service/helpers"
@@ -74,6 +75,22 @@ func (snap *SnapShotUseCases) GetStagesCount(projectID string) ([]entities.UserP
 	res, err := snap.Adapter.GetStagesCount(projectID)
 	if err != nil {
 		helpers.PrintErr(err, "error happened at GetStagesCount adapter")
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (snap *SnapShotUseCases) GetSnapshot(commitID string) ([]byte, error) {
+
+	closer, err := snap.Adapter.GetSnapShot(commitID)
+	if err != nil {
+		helpers.PrintErr(err, "error happened at GetSnapShot adapter")
+	}
+
+	res, err := io.ReadAll(closer)
+	if err != nil {
+		helpers.PrintErr(err, "error happened at reading from object")
 		return nil, err
 	}
 

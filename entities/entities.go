@@ -49,3 +49,7 @@ type UserProgress struct {
 	UserID string `json:"user_id" bson:"user_id"`
 	Stages int    `json:"stages" bson:"stages"`
 }
+
+type GetSnapshot struct {
+	Snap []byte `json:"snap"`
+}

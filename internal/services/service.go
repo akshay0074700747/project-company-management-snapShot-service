@@ -3,7 +3,7 @@ package services
 import (
 	"encoding/json"
 	"net/http"
-
+	"fmt"
 	"github.com/akshay0074700747/projectandCompany_management_protofiles/pb/userpb"
 	"github.com/akshay0074700747/projectandCompany_management_snapShot-service/entities"
 	"github.com/akshay0074700747/projectandCompany_management_snapShot-service/helpers"
@@ -131,6 +131,38 @@ func (snap *SnapShotService) getStagesCount(w http.ResponseWriter, r *http.Reque
 	res.UserAndProgress = usersProgress
 
 	jsonDta, err := json.Marshal(res)
+	if err != nil {
+		helpers.PrintErr(err, "error happened at marshaling to json")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	w.Write(jsonDta)
+
+}
+
+func (snap *SnapShotService) getSnapshotbyID(w http.ResponseWriter, r *http.Request) {
+
+	snapShotID := r.URL.Query().Get("commitID")
+	
+	fmt.Println(snapShotID,"herreeeeeeeeeeee")
+
+	res,err := snap.Usecase.GetSnapshot(snapShotID)
+	if err != nil {
+		helpers.PrintErr(err,"erorr happened at GetSnapshot usecase")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var result entities.GetSnapshot
+
+	result.Snap = res
+
+	jsonDta, err := json.Marshal(result)
 	if err != nil {
 		helpers.PrintErr(err, "error happened at marshaling to json")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

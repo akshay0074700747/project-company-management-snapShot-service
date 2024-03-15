@@ -162,3 +162,14 @@ func (snap *SnapShotAdapter) GetStagesCount(projectID string) ([]entities.UserPr
 
 	return stages, nil
 }
+
+func (snap *SnapShotAdapter) GetSnapShot(fileName string) (io.ReadCloser, error) {
+
+fmt.Println(fileName," dvjchewboucibowrue")
+	object, err := snap.MinioDB.GetObject(context.TODO(), "snapshots-storage-bucket", fileName, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return object, nil
+}

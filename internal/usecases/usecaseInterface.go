@@ -8,4 +8,5 @@ type SnapShotUsecaseInterfaces interface {
 	GetSnapshotData(string, string) (entities.SnapMessage, error)
 	GetStages(string, string) ([]entities.StagesDetails, error)
 	GetStagesCount(string)([]entities.UserProgress,error)
+	GetSnapshot(string)([]byte,error)
 }

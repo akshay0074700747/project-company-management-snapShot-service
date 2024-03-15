@@ -33,6 +33,7 @@ func (engine *SnapShotEngine) Start(addr string) {
 	r.Get("/project/snapshots", engine.Srv.GetSnapshots)
 	r.Get("/project/task/stages", engine.Srv.getStages)
 	r.Get("/project/task/stages/count", engine.Srv.getStagesCount)
+	r.Get("/snapshots/pull",engine.Srv.getSnapshotbyID)
 
 	fmt.Println("snapShot service is starting")
 	http.ListenAndServe(addr, handler)
