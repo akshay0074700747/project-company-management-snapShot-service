@@ -17,10 +17,10 @@ import (
 func (snap *SnapShotService) StartConsumerGroup() {
 
 	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers":  "localhost:9092",
-		"group.id":           "snapshotConsumers",
-		"auto.offset.reset":  "earliest",
-		"enable.auto.commit": "false",
+		"bootstrap.servers":        "host.docker.internal:9092",
+		"group.id":                 "snapshotConsumers",
+		"auto.offset.reset":        "earliest",
+		"enable.auto.commit":       "false",
 		"allow.auto.create.topics": true})
 	if err != nil {
 		helpers.PrintErr(err, "error occured at creating a kafka consumer")
@@ -97,7 +97,7 @@ func (snap *SnapShotService) StartConsumerGroup() {
 					})
 				}
 
-				fmt.Println("=====hree=====",msg.IsStaged)
+				fmt.Println("=====hree=====", msg.IsStaged)
 
 				if err = snap.Usecase.InsertMetaData(meta, msg.IsStaged, msg.Key); err != nil {
 					helpers.PrintErr(err, "Error occured on InsertMetaData usecase")
