@@ -121,7 +121,7 @@ func (snap *SnapShotService) StartConsumerGroup() {
 	config.Consumer.Return.Errors = true
 	config.Metadata.AllowAutoTopicCreation = true
 	config.Consumer.Offsets.AutoCommit.Enable = true
-	consumer, err := sarama.NewConsumer([]string{"host.docker.internal:9092"}, config)
+	consumer, err := sarama.NewConsumer([]string{"localhost:9092"}, config)
 	if err != nil {
 		log.Fatalf("Error creating consumer: %v", err)
 	}
