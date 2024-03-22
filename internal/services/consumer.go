@@ -125,7 +125,7 @@ func (snap *SnapShotService) StartConsumerGroup() {
 	var consumer sarama.Consumer
 	var err error
 	for i := 0; i < 5; i++ {
-		consumer, err = sarama.NewConsumer([]string{"kafka:9092"}, config)
+		consumer, err = sarama.NewConsumer([]string{"kafka.docker.internal:9092"}, config)
 		if err != nil {
 			if i == 4 {
 				log.Fatal("Closingg: %v", err)
