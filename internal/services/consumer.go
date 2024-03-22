@@ -124,13 +124,13 @@ func (snap *SnapShotService) StartConsumerGroup() {
 	config.Consumer.Offsets.AutoCommit.Enable = true
 	var consumer sarama.Consumer
 	var err error
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 8; i++ {
 		consumer, err = sarama.NewConsumer([]string{"host.docker.internal:29092"}, config)
 		if err != nil {
-			if i == 4 {
+			if i == 7 {
 				log.Fatal("Closingg: %v", err)
 			}
-			fmt.Println("Error creating consumer: %v", err)
+			fmt.Println("Error creating consumer : ", i, ": %v", err)
 			time.Sleep(time.Second * 3)
 		} else {
 			break
