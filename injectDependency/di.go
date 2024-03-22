@@ -14,7 +14,7 @@ func Initialize(cfg config.Config) *services.SnapShotEngine {
 	mongoDB := db.ConnectMongo(cfg)
 	adapter := adapters.NewSnapShotAdapter(minioDB, mongoDB)
 	usecase := usecases.NewSnapShotUseCases(adapter)
-	service := services.NewSnapShotService(usecase, ":50001")
+	service := services.NewSnapShotService(usecase, "user-service:50001")
 
 	go service.StartConsumerGroup()
 
